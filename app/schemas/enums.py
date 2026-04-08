@@ -18,6 +18,7 @@ SourceType = Literal[
 ]
 
 ReviewBucket = Literal[
+    "authoritative",
     "anchor_review",
     "systematic_review",
     "specialized_review",

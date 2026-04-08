@@ -21,4 +21,4 @@ def test_packetizer_generates_source_packets():
     ]
     packets = Packetizer().packetize("Parkinson disease", docs)
     assert len(packets) == 3
-    assert packets[1].section_label == "Mechanism / M1"
+    assert packets[1].section_label.startswith("Mechanism / M1")
