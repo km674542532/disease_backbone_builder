@@ -39,16 +39,13 @@ class Packetizer:
     def _make_packet(self, disease_label: str, doc: Dict[str, Any], section_label: str, text: str, idx: int) -> SourcePacket:
         return SourcePacket(
             source_packet_id=f"sp_{idx:04d}",
+            source_document_id=doc.get("source_document_id", f"src_{idx:04d}"),
             disease_label=disease_label,
             source_type=doc.get("source_type", "Other"),
             source_name=doc.get("source_name", doc.get("source_title", "unknown_source")),
             source_title=doc.get("source_title", "untitled"),
-            source_locator={
-                "url": doc.get("url"),
-                "pmid": doc.get("pmid"),
-                "doi": doc.get("doi"),
-                "internal_ref": doc.get("internal_ref"),
-            },
+            source_priority_tier=doc.get("source_priority_tier", "supplementary_review"),
+            selection_metadata=doc.get("selection_metadata", {}),
             section_label=section_label,
             text_block=text,
             metadata=doc.get("metadata", {}),

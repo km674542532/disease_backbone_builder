@@ -1,0 +1,34 @@
+hallmark_rules:
+  min_support_for_core_hallmark: 2
+  generic_filter_terms: ["cell stress response", "cell death", "inflammation"]
+module_rules:
+  min_support_for_core_module: 2
+  allowed_module_types: ["core_mechanism_module", "supporting_module", "phenotype_convergence_module", "peripheral_module"]
+  generic_filter_terms: ["general metabolism", "housekeeping process"]
+chain_rules:
+  min_steps: 3
+  min_chain_confidence: 0.7
+gene_rules:
+  allowed_gene_roles: ["core_driver", "major_associated_gene", "module_specific_gene", "supporting_gene", "uncertain"]
+  require_module_link: true
+source_weights:
+  GeneReviews: 1.0
+  Orphanet: 0.95
+  ClinGenSummary: 0.9
+  OMIMSummary: 0.9
+  ReviewArticle: 0.8
+  SystematicReview: 0.85
+  SpecializedReview: 0.75
+  Other: 0.5
+review_selection_rules:
+  min_publication_year: 2018
+  allowed_languages: ["eng"]
+  max_selected_reviews: 10
+  max_selected_systematic_reviews: 5
+  max_selected_specialized_reviews: 8
+review_ranking_weights:
+  review_type_weight: 0.3
+  recency_weight: 0.2
+  impact_factor_weight: 0.2
+  mechanism_density_weight: 0.2
+  disease_specificity_weight: 0.1

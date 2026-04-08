@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import ConfigDict, Field
+
+from app.schemas.base import SchemaModel
 
 
-class ValidationReport(BaseModel):
-    """Output for post-assembly quality checks."""
-
+class ValidationReport(SchemaModel):
     model_config = ConfigDict(extra="forbid")
 
     backbone_id: str

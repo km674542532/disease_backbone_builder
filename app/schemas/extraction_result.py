@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import ConfigDict, Field
 
+from app.schemas.base import SchemaModel
 from app.schemas.candidates import (
     CausalChainCandidate,
     HallmarkCandidate,
@@ -14,30 +15,29 @@ from app.schemas.candidates import (
 )
 
 
-class ExtractedDiseaseRef(BaseModel):
-    """Disease identity included in extraction result."""
-
+class ExtractedDiseaseRef(SchemaModel):
     model_config = ConfigDict(extra="forbid")
-
     label: str
     mondo_id: str | None = None
 
 
-class ExtractionQuality(BaseModel):
-    """Extraction quality and review flags."""
-
+class ExtractionQuality(SchemaModel):
     model_config = ConfigDict(extra="forbid")
-
     llm_confidence: float
     needs_manual_review: bool = False
     warnings: List[str] = Field(default_factory=list)
+    parse_status: str = "ok"
+    schema_validation_status: str = "ok"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not (0.0 <= self.llm_confidence <= 1.0):
+            from pydantic import ValidationError
+            raise ValidationError("llm_confidence must be within 0-1")
 
 
-class ExtractionResult(BaseModel):
-    """Structured extraction output produced per source packet."""
-
+class ExtractionResult(SchemaModel):
     model_config = ConfigDict(extra="forbid")
-
     source_packet_id: str
     disease: ExtractedDiseaseRef
     hallmarks: List[HallmarkCandidate] = Field(default_factory=list)
