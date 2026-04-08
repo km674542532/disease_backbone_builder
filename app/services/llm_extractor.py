@@ -63,7 +63,6 @@ class LLMExtractor:
                 "source_type": packet.source_type,
                 "source_title": packet.source_title,
                 "section_label": packet.section_label,
-                "source_locator": packet.source_locator.model_dump(),
                 "metadata": packet.metadata,
             }, ensure_ascii=False),
         )
