@@ -1,13 +1,3 @@
-下面直接给你一套可落地的 **Disease Backbone Builder** 设计，包括：
-
-1. 完整 schema
-2. LLM 抽取 prompt
-3. 聚合规则
-4. backbone 生成流水线
-
-这套设计的核心，严格对应 disease map 论文里的几个原则：先定义 disease scope 和 biological coverage，再把知识 formalise 成标准化、分层、模块化、可证据追踪的表示。论文还强调模块化、多层结构、interaction/evidence annotation 和后续可视化/分析用途。    
-
----
 
 # 一、Disease Backbone Builder 的定位
 
