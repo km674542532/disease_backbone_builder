@@ -42,14 +42,15 @@ def build(input_path: str, disease_name: str) -> None:
     packets = packetizer.packetize(disease.label, source_docs)
     write_jsonl("data/source_packets/source_packets.jsonl", [p.model_dump() for p in packets])
 
-    extraction_results = []
-    for packet in packets:
-        try:
-            res = extractor.extract(packet, disease.ids.model_dump(), disease.seed_genes)
-            extraction_results.append(res)
-        except Exception:
-            logger.exception("failed_extraction source_packet_id=%s", packet.source_packet_id)
-    write_jsonl("data/extraction_results/extraction_results.jsonl", [r.model_dump() for r in extraction_results])
+    extraction_results, failed_packets = extractor.extract_packets(
+        packets=packets,
+        disease_ids=disease.ids.model_dump(),
+        seed_genes=disease.seed_genes,
+        extraction_results_path="data/extraction_results/extraction_results.jsonl",
+        raw_llm_responses_path="data/extraction_results/raw_llm_responses.jsonl",
+    )
+    if failed_packets:
+        logger.warning("stage_failed stage=extraction failed_packets=%s", failed_packets)
 
     normalized = normalizer.normalize(extraction_results)
     write_jsonl("data/aggregation/normalized_candidates.jsonl", [n.model_dump() for n in normalized])
@@ -70,8 +71,9 @@ def build(input_path: str, disease_name: str) -> None:
 
     draft = assembler.assemble(disease, config, pruned, packet_source_type)
     write_json("data/outputs/disease_backbone_draft.json", draft.model_dump())
+    write_json("data/outputs/pd_backbone_draft_v1_1.json", draft.model_dump())
 
-    report = validator.validate(draft)
+    report = validator.validate(draft, config)
     write_json("data/outputs/validation_report.json", report.model_dump())
 
     review_dir = Path("data/outputs/review_bundle")
