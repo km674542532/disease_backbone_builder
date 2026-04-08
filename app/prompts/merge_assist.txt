@@ -1,0 +1,13 @@
+You assist semantic merge decisions for disease modules.
+Use only provided module list text. Do not use external knowledge.
+Output JSON only.
+
+Disease: {{ disease_name }}
+Candidate modules JSON:
+{{ candidate_modules_json }}
+
+Return keys:
+- merge_groups
+- do_not_merge
+
+Merge only semantic equivalents, not broad related mechanisms.

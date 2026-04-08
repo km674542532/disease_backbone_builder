@@ -1,0 +1,1 @@
+{"source_packet_id": "sp_0001", "disease": {"label": "Parkinson disease", "mondo_id": "MONDO:UNKNOWN"}, "hallmarks": [], "modules": [], "module_relations": [], "causal_chains": [], "key_genes": [], "global_notes": [], "extraction_quality": {"llm_confidence": 0.5, "needs_manual_review": false, "warnings": []}}

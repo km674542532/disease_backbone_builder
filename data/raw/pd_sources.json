@@ -1,0 +1,18 @@
+[
+  {
+    "source_type": "GeneReviews",
+    "source_name": "GeneReviews",
+    "source_title": "Parkinson Disease Overview",
+    "sections": [
+      {
+        "section_label": "Disease mechanism / pathogenesis",
+        "text": "Parkinson disease pathogenesis includes mitochondrial quality-control failure and impaired mitophagy."
+      }
+    ],
+    "metadata": {
+      "language": "en",
+      "is_review_like": true,
+      "is_authoritative_summary": true
+    }
+  }
+]
