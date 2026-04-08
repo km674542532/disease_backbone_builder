@@ -20,6 +20,6 @@ class SourcePacket(SchemaModel):
     source_title: str
     section_label: str
     text_block: str
-    source_priority_tier: ReviewBucket = "supplementary_review"
+    priority_tier: ReviewBucket = "supplementary_review"
     selection_metadata: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
