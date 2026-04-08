@@ -1,7 +1,6 @@
 """Score aggregated records with MVP support heuristics."""
 from __future__ import annotations
 
-from collections import Counter
 from typing import Dict, List
 
 from app.schemas.aggregation import BackboneAggregationRecord
@@ -9,7 +8,7 @@ from app.schemas.builder_config import BuilderConfig
 
 
 class Scorer:
-    """Computes support score for aggregation records."""
+    """Compute support_score based on support breadth, source authority, and confidence."""
 
     def score(
         self,
@@ -18,13 +17,23 @@ class Scorer:
         item_confidences: Dict[str, List[float]],
         config: BuilderConfig,
     ) -> List[BackboneAggregationRecord]:
+        source_weight_total = max(sum(config.source_weights.values()), 0.0001)
         for rec in records:
-            source_types = [normalized_results_source_types.get(sid, "Other") for sid in rec.source_packet_ids]
-            diversity = len(set(source_types)) / max(1, len(config.source_weights))
-            auth = 0.0
+            source_types = [normalized_results_source_types.get(packet_id, "Other") for packet_id in rec.source_packet_ids]
             if source_types:
-                auth = sum(config.source_weights.get(st, 0.5) for st in source_types) / len(source_types)
-            mean_conf = sum(item_confidences.get(rec.normalized_key, [0.5])) / max(1, len(item_confidences.get(rec.normalized_key, [0.5])))
-            specificity = 0.2 if any(term in rec.normalized_key for term in ["stress", "inflammation", "metabolism"]) else 1.0
-            rec.support_score = round(0.45 * diversity + 0.25 * auth + 0.20 * mean_conf + 0.10 * specificity, 4)
+                authority_score = sum(config.source_weights.get(source_type, 0.5) for source_type in source_types) / len(source_types)
+            else:
+                authority_score = 0.0
+            authority_score = min(1.0, authority_score)
+
+            support_score = min(1.0, rec.source_count / 4.0)
+            diversity_score = min(1.0, len(set(source_types)) / 3.0)
+            confs = item_confidences.get(rec.normalized_key, [0.5])
+            confidence_score = sum(confs) / len(confs)
+            weighted_authority = min(1.0, authority_score / max(source_weight_total / max(len(config.source_weights), 1), 0.0001))
+
+            rec.support_score = round(
+                0.35 * support_score + 0.25 * diversity_score + 0.25 * confidence_score + 0.15 * weighted_authority,
+                4,
+            )
         return records
