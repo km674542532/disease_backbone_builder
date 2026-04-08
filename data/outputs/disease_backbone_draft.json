@@ -1,0 +1,30 @@
+{
+  "backbone_id": "parkinson_disease_backbone_draft_v1",
+  "builder_version": "1.0.0",
+  "disease": {
+    "label": "Parkinson disease",
+    "ids": {
+      "mondo": "MONDO:UNKNOWN",
+      "mesh": null,
+      "orphanet": null,
+      "omim": null
+    }
+  },
+  "hallmarks": [],
+  "modules": [],
+  "module_relations": [],
+  "canonical_chains": [],
+  "key_genes": [],
+  "source_summary": {
+    "source_packet_count": 1,
+    "source_type_counts": {
+      "GeneReviews": 1
+    }
+  },
+  "build_quality": {
+    "overall_confidence": 0.0,
+    "items_needing_review": 0,
+    "provisional_item_count": 0
+  },
+  "status": "draft"
+}
