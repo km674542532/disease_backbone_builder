@@ -6,6 +6,8 @@ import os
 import time
 from typing import Protocol
 
+from openai import OpenAI
+
 
 
 class LLMClient(Protocol):
