@@ -132,15 +132,22 @@ class PubMedClient:
         return self.efetch_records(pmids, query_plan)
 
     @staticmethod
+    def _parse_abstract(article: ET.Element) -> str:
+        parts: List[str] = []
+        for node in article.findall(".//Abstract/AbstractText"):
+            text = "".join(node.itertext()).strip()
+            if text:
+                parts.append(text)
+        return "\n".join(parts)
+
+    @staticmethod
     def _parse_pubmed_xml(raw_xml: str, query_id: str) -> List[LiteratureRecord]:
         root = ET.fromstring(raw_xml)
         records: List[LiteratureRecord] = []
         for article in root.findall(".//PubmedArticle"):
             pmid = (article.findtext(".//PMID") or "").strip()
             title = " ".join((article.findtext(".//ArticleTitle") or "").split())
-            abstract = "\n".join(
-                t.strip() for t in article.findall(".//Abstract/AbstractText") if (t.text or "").strip()
-            )
+            abstract = PubMedClient._parse_abstract(article)
             journal = (article.findtext(".//Journal/Title") or "").strip()
             year_text = (article.findtext(".//PubDate/Year") or "0").strip()
             try:
