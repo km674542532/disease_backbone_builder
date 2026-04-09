@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -11,7 +12,7 @@ from app.schemas.disease_descriptor import DiseaseDescriptor, DiseaseIds
 from app.services.aggregator import Aggregator
 from app.services.assembler import Assembler
 from app.services.literature.pubmed_pipeline import run_pubmed_retrieval
-from app.services.llm_client import MockLLMClient
+from app.services.llm_client import LLMClient, MockLLMClient, QwenAPIClient
 from app.services.llm_extractor import LLMExtractor
 from app.services.normalizer import Normalizer
 from app.services.packetizer import Packetizer
@@ -23,6 +24,28 @@ from app.utils.json_io import write_json, write_jsonl
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def _build_llm_client(llm_mode: str, qwen_api_key: Optional[str]) -> LLMClient:
+    mode = (llm_mode or "auto").lower()
+    env_has_key = bool(os.getenv("QWEN_API_KEY") or os.getenv("DASHSCOPE_API_KEY"))
+
+    if mode == "mock":
+        logger.warning("llm_mode=mock: using MockLLMClient (no external LLM call)")
+        return MockLLMClient()
+
+    if mode == "qwen":
+        logger.info("llm_mode=qwen: using QwenAPIClient")
+        return QwenAPIClient(api_key=qwen_api_key)
+
+    if mode == "auto":
+        if qwen_api_key or env_has_key:
+            logger.info("llm_mode=auto detected qwen api key: using QwenAPIClient")
+            return QwenAPIClient(api_key=qwen_api_key)
+        logger.warning("llm_mode=auto without api key: fallback to MockLLMClient")
+        return MockLLMClient()
+
+    raise ValueError(f"Unsupported llm_mode={llm_mode}. Use one of: auto, mock, qwen")
 
 
 def build(
@@ -37,6 +60,8 @@ def build(
     pubmed_days_back: Optional[int] = None,
     pubmed_query: Optional[str] = None,
     refresh_pubmed: bool = False,
+    llm_mode: str = "auto",
+    qwen_api_key: Optional[str] = None,
 ) -> None:
     logger.info("stage_start pipeline_build disease=%s", disease_name)
     disease = DiseaseDescriptor(label=disease_name, ids=DiseaseIds(mondo="MONDO:UNKNOWN"))
@@ -78,7 +103,7 @@ def build(
 
     collector = SourceCollector()
     packetizer = Packetizer()
-    extractor = LLMExtractor(MockLLMClient())
+    extractor = LLMExtractor(_build_llm_client(llm_mode, qwen_api_key))
     normalizer = Normalizer()
     aggregator = Aggregator()
     scorer = Scorer()
@@ -182,6 +207,8 @@ def main() -> None:
     parser.add_argument("--pubmed-days-back", type=int)
     parser.add_argument("--pubmed-query")
     parser.add_argument("--refresh-pubmed", action="store_true")
+    parser.add_argument("--llm-mode", choices=["auto", "mock", "qwen"], default="auto")
+    parser.add_argument("--qwen-api-key")
     args = parser.parse_args()
     build(
         args.input,
@@ -194,6 +221,8 @@ def main() -> None:
         pubmed_days_back=args.pubmed_days_back,
         pubmed_query=args.pubmed_query,
         refresh_pubmed=args.refresh_pubmed,
+        llm_mode=args.llm_mode,
+        qwen_api_key=args.qwen_api_key,
     )
 
 
