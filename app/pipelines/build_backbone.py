@@ -4,11 +4,13 @@ from __future__ import annotations
 import argparse
 import logging
 from pathlib import Path
+from typing import List, Optional
 
 from app.schemas.builder_config import BuilderConfig
 from app.schemas.disease_descriptor import DiseaseDescriptor, DiseaseIds
 from app.services.aggregator import Aggregator
 from app.services.assembler import Assembler
+from app.services.literature.pubmed_pipeline import run_pubmed_retrieval
 from app.services.llm_client import MockLLMClient
 from app.services.llm_extractor import LLMExtractor
 from app.services.normalizer import Normalizer
@@ -23,10 +25,56 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 
-def build(input_path: str, disease_name: str) -> None:
+def build(
+    input_path: Optional[str],
+    disease_name: str,
+    *,
+    use_pubmed: bool = False,
+    max_reviews: int = 50,
+    pubmed_email: Optional[str] = None,
+    pubmed_api_key: Optional[str] = None,
+    pubmed_cache_dir: str = "data/literature_records",
+    pubmed_days_back: Optional[int] = None,
+    pubmed_query: Optional[str] = None,
+    refresh_pubmed: bool = False,
+) -> None:
     logger.info("stage_start pipeline_build disease=%s", disease_name)
     disease = DiseaseDescriptor(label=disease_name, ids=DiseaseIds(mondo="MONDO:UNKNOWN"))
     config = BuilderConfig(disease={"label": disease_name, "mondo_id": disease.ids.mondo})
+
+    source_files: List[str] = []
+    if input_path:
+        source_files.append(input_path)
+
+    if use_pubmed:
+        try:
+            pubmed_jsonl = run_pubmed_retrieval(
+                disease=disease_name,
+                max_reviews=max_reviews,
+                email=pubmed_email,
+                api_key=pubmed_api_key,
+                cache_dir=pubmed_cache_dir,
+                days_back=pubmed_days_back,
+                override_query=pubmed_query,
+                refresh=refresh_pubmed,
+            )
+            if pubmed_jsonl:
+                source_files.append(pubmed_jsonl)
+        except Exception as exc:
+            cache_candidate = Path(pubmed_cache_dir) / f"{_slugify(disease_name)}_pubmed.jsonl"
+            if input_path:
+                logger.warning("pubmed_retrieval_failed_fallback error=%s", exc)
+            elif cache_candidate.exists():
+                logger.warning("pubmed_retrieval_failed_fallback error=%s using_cache=%s", exc, cache_candidate)
+                source_files.append(str(cache_candidate))
+            else:
+                raise RuntimeError(
+                    "PubMed retrieval failed and no local input/cache is available. "
+                    f"disease={disease_name} cache={cache_candidate}"
+                ) from exc
+
+    if not source_files:
+        raise ValueError("No sources available. Provide --input and/or --use-pubmed.")
 
     collector = SourceCollector()
     packetizer = Packetizer()
@@ -38,7 +86,9 @@ def build(input_path: str, disease_name: str) -> None:
     assembler = Assembler()
     validator = Validator()
 
-    source_docs = collector.collect(input_path)
+    source_docs = []
+    for source_file in source_files:
+        source_docs.extend(collector.collect(source_file))
     packets = packetizer.packetize(disease.label, source_docs)
     write_jsonl("data/source_packets/source_packets.jsonl", [p.model_dump() for p in packets])
 
@@ -116,12 +166,35 @@ def build(input_path: str, disease_name: str) -> None:
     logger.info("stage_end pipeline_build")
 
 
+def _slugify(value: str) -> str:
+    return "_".join(value.lower().strip().split())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True)
+    parser.add_argument("--input")
     parser.add_argument("--disease", required=True)
+    parser.add_argument("--use-pubmed", action="store_true")
+    parser.add_argument("--max-reviews", type=int, default=50)
+    parser.add_argument("--pubmed-email")
+    parser.add_argument("--pubmed-api-key")
+    parser.add_argument("--pubmed-cache-dir", default="data/literature_records")
+    parser.add_argument("--pubmed-days-back", type=int)
+    parser.add_argument("--pubmed-query")
+    parser.add_argument("--refresh-pubmed", action="store_true")
     args = parser.parse_args()
-    build(args.input, args.disease)
+    build(
+        args.input,
+        args.disease,
+        use_pubmed=args.use_pubmed,
+        max_reviews=args.max_reviews,
+        pubmed_email=args.pubmed_email,
+        pubmed_api_key=args.pubmed_api_key,
+        pubmed_cache_dir=args.pubmed_cache_dir,
+        pubmed_days_back=args.pubmed_days_back,
+        pubmed_query=args.pubmed_query,
+        refresh_pubmed=args.refresh_pubmed,
+    )
 
 
 if __name__ == "__main__":

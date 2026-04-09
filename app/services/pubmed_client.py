@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import json
 import logging
+import socket
 import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Optional
+from urllib.error import HTTPError, URLError
 
 from app.schemas.literature_query_plan import LiteratureQueryPlan
 from app.schemas.literature_record import LiteratureRecord
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 class PubMedClient:
     ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+    RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
     def __init__(
         self,
@@ -50,10 +53,22 @@ class PubMedClient:
             try:
                 with urllib.request.urlopen(url, timeout=self.timeout_seconds) as response:
                     return response.read().decode("utf-8")
+            except HTTPError as exc:  # pragma: no cover - network exception branch
+                last_error = exc
+                if exc.code not in self.RETRYABLE_STATUS_CODES or attempt >= self.max_retries:
+                    break
+                time.sleep(0.5 * attempt)
+            except (URLError, TimeoutError, socket.timeout) as exc:  # pragma: no cover - network exception branch
+                last_error = exc
+                if attempt >= self.max_retries:
+                    break
+                time.sleep(0.5 * attempt)
             except Exception as exc:  # pragma: no cover - network exception branch
                 last_error = exc
-                if attempt < self.max_retries:
-                    time.sleep(0.5 * attempt)
+                if attempt >= self.max_retries:
+                    break
+                time.sleep(0.5 * attempt)
+
         raise RuntimeError(f"PubMed request failed after retries: {url}") from last_error
 
     def esearch_pmids(self, query_plan: LiteratureQueryPlan) -> List[str]:
