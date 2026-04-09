@@ -9,6 +9,7 @@ from typing import Protocol
 from openai import OpenAI
 
 
+
 class LLMClient(Protocol):
     """Protocol for project-wide LLM invocation."""
 
@@ -57,6 +58,11 @@ class QwenAPIClient:
 
         if not self.api_key:
             raise ValueError("QWEN_API_KEY is required for QwenAPIClient")
+
+        try:
+            from openai import OpenAI
+        except Exception as exc:  # pragma: no cover - import environment
+            raise RuntimeError("OpenAI SDK is required for QwenAPIClient") from exc
 
         self.client = OpenAI(
             api_key=self.api_key,

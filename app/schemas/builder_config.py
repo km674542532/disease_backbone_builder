@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import SchemaModel
 from app.schemas.enums import SourceType
@@ -97,8 +97,8 @@ class BuilderConfig(SchemaModel):
         }
     )
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_weights(self) -> "BuilderConfig":
         for field in [
             self.aggregation_policy.min_chain_confidence,
             self.ranking_policy.impact_factor_weight,
@@ -108,5 +108,5 @@ class BuilderConfig(SchemaModel):
             self.ranking_policy.disease_specificity_weight,
         ]:
             if not (0.0 <= field <= 1.0):
-                from pydantic import ValidationError
-                raise ValidationError("config confidence/weight fields must be within 0-1")
+                raise ValueError("config confidence/weight fields must be within 0-1")
+        return self

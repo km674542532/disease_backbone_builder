@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import SchemaModel
 from app.schemas.enums import ModuleRecordType
@@ -23,8 +23,8 @@ class BackboneAggregationRecord(SchemaModel):
     support_score: float = 0.0
     review_flags: List[str] = Field(default_factory=list)
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_support_score(self) -> "BackboneAggregationRecord":
         if not (0.0 <= self.support_score <= 1.0):
-            from pydantic import ValidationError
-            raise ValidationError("support_score must be within 0-1")
+            raise ValueError("support_score must be within 0-1")
+        return self
