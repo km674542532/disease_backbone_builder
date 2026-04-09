@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 class Packetizer:
     """Section/subsection/paragraph-group aware packetizer."""
 
+    def __init__(
+        self,
+        source_packets_path: str = "data/source_packets/source_packets.jsonl",
+        packetization_stats_path: str = "data/source_packets/packetization_stats.json",
+    ) -> None:
+        self.source_packets_path = source_packets_path
+        self.packetization_stats_path = packetization_stats_path
+
     def packetize(self, disease_label: str, source_docs: Iterable[Dict[str, Any] | SourceDocument]) -> List[SourcePacket]:
         docs = [self._coerce_doc(disease_label, d) for d in source_docs]
         logger.info("audit stage=source_packetization status=started docs=%d", len(docs))
@@ -54,8 +62,8 @@ class Packetizer:
             "skipped_empty_packets": skipped_empty,
             "packet_count": len(packets),
         }
-        write_jsonl("data/source_packets/source_packets.jsonl", [p.model_dump() for p in packets])
-        write_json("data/source_packets/packetization_stats.json", stats)
+        write_jsonl(self.source_packets_path, [p.model_dump() for p in packets])
+        write_json(self.packetization_stats_path, stats)
         logger.info("audit stage=source_packetization status=completed packets=%d skipped_empty=%d", len(packets), skipped_empty)
         return packets
 
