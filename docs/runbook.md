@@ -81,6 +81,20 @@ python -m app.pipelines.build_backbone \
   --llm-mode qwen
 ```
 
+## 4.5 使用配置文件 + 运行级产物目录
+
+```bash
+python -m app.pipelines.build_backbone \
+  --input data/raw/pd_sources.json \
+  --disease "Parkinson disease" \
+  --llm-mode mock \
+  --config config/backbone_rules.v1_1.yaml \
+  --output-root data/runs \
+  --run-id pd_20260409_demo
+```
+
+运行后可在 `data/runs/pd_20260409_demo/` 下查看完整分层产物与 `config/effective_builder_config.json`。
+
 ## 5. 成功判定
 
 至少检查以下文件存在：

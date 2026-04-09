@@ -2,7 +2,7 @@
 
 ## P0（必须优先）
 
-- [ ] 增加 LLM 输出适配层（adapter/normalizer before schema validate）。
+- [x] 增加 LLM 输出适配层（adapter/normalizer before schema validate）。
   - 文件：`app/services/llm_extractor.py`（新增 `app/services/extraction_adapter.py`）
   - 动作：
     - 对字段别名做映射（如 `module_id -> candidate_id` 等）
@@ -18,7 +18,7 @@
 
 ## P1（结构清晰化）
 
-- [ ] 统一配置入口，收束 `BuilderConfig` 与 `RuleConfig` 双轨。
+- [x] 统一配置入口，收束 `BuilderConfig` 与 `RuleConfig` 双轨（基础版已接入）。
   - 文件：`app/pipelines/build_backbone.py`, `app/schemas/builder_config.py`, `app/schemas/rule_config.py`, `config/backbone_rules.v1_1.yaml`
   - 动作：
     - pipeline 支持 `--config`
@@ -31,7 +31,7 @@
     - 标记 experimental 包路径或 feature flag
     - 明确接入点与产物 contract
 
-- [ ] 引入运行级 artifact 管理（run_id/output_root）。
+- [x] 引入运行级 artifact 管理（run_id/output_root，基础版已接入）。
   - 文件：`app/pipelines/build_backbone.py`, `app/utils/json_io.py`
   - 动作：
     - 所有输出改写入 `data/runs/{run_id}/...`

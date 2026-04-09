@@ -240,8 +240,8 @@
 ## 10) 最小修复方案（本轮建议）
 
 1. **已做**：修复 `llm_client` 模块级导入问题，提升 mock/test 可运行性。
-2. **文档补齐**：新增 project audit / map / runbook / refactor todo，明确主线与优先级。
-3. **下一步最小代码改动（建议）**：
-   - 新增 `app/services/extraction_adapter.py`，仅做字段映射与轻量清洗。
-   - 在 `LLMExtractor` 中接入 adapter（不放宽 schema）。
-   - 为 pipeline 增加可选 `--output-root` 与 `--run-id`。
+2. **已做**：新增 `ExtractionAdapter` 并接入 `LLMExtractor`，先做字段别名映射/枚举归一/缺省补齐，再做严格 schema 校验。
+3. **已做**：pipeline 支持 `--config`/`--output-root`/`--run-id`，并落盘 `effective_builder_config.json` 作为生效配置快照。
+4. **下一步建议**：
+   - 扩展 adapter 的 drift 词典（按线上失败样本迭代）。
+   - 给 run artifact 增加 index/latest 管理。
