@@ -53,7 +53,7 @@ class ExtractionAdapter:
     def _adapt_hallmarks(self, items: Any, source_packet_id: str) -> List[Dict[str, Any]]:
         rows: List[Dict[str, Any]] = []
         for i, item in enumerate(items if isinstance(items, list) else [], start=1):
-            row = dict(item or {})
+            row = self._as_dict(item)
             candidate_id = row.get("candidate_id") or row.get("hallmark_id") or f"h_{source_packet_id}_{i}"
             label = str(row.get("label") or row.get("name") or "unknown_hallmark")
             rows.append(
@@ -75,7 +75,7 @@ class ExtractionAdapter:
     def _adapt_modules(self, items: Any, source_packet_id: str) -> List[Dict[str, Any]]:
         rows: List[Dict[str, Any]] = []
         for i, item in enumerate(items if isinstance(items, list) else [], start=1):
-            row = dict(item or {})
+            row = self._as_dict(item)
             candidate_id = row.get("candidate_id") or row.get("module_id") or f"m_{source_packet_id}_{i}"
             label = str(row.get("label") or row.get("module_label") or row.get("name") or "unknown_module")
             rows.append(
@@ -99,7 +99,7 @@ class ExtractionAdapter:
     def _adapt_module_relations(self, items: Any, source_packet_id: str) -> List[Dict[str, Any]]:
         rows: List[Dict[str, Any]] = []
         for i, item in enumerate(items if isinstance(items, list) else [], start=1):
-            row = dict(item or {})
+            row = self._as_dict(item)
             candidate_id = row.get("candidate_id") or row.get("relation_id") or f"r_{source_packet_id}_{i}"
             rows.append(
                 {
@@ -118,13 +118,13 @@ class ExtractionAdapter:
     def _adapt_causal_chains(self, items: Any, source_packet_id: str) -> List[Dict[str, Any]]:
         rows: List[Dict[str, Any]] = []
         for i, item in enumerate(items if isinstance(items, list) else [], start=1):
-            row = dict(item or {})
+            row = self._as_dict(item)
             candidate_id = row.get("candidate_id") or row.get("chain_id") or f"c_{source_packet_id}_{i}"
             module_label = str(row.get("module_label") or row.get("module") or "")
             steps = row.get("steps", [])
             norm_steps = []
             for j, step in enumerate(steps if isinstance(steps, list) else [], start=1):
-                step_row = dict(step or {})
+                step_row = self._as_dict(step)
                 norm_steps.append(
                     {
                         "order": int(step_row.get("order", j)),
@@ -149,7 +149,7 @@ class ExtractionAdapter:
     def _adapt_key_genes(self, items: Any, source_packet_id: str) -> List[Dict[str, Any]]:
         rows: List[Dict[str, Any]] = []
         for i, item in enumerate(items if isinstance(items, list) else [], start=1):
-            row = dict(item or {})
+            row = self._as_dict(item)
             candidate_id = row.get("candidate_id") or row.get("gene_id") or f"g_{source_packet_id}_{i}"
             rows.append(
                 {
@@ -168,7 +168,7 @@ class ExtractionAdapter:
 
     @staticmethod
     def _adapt_extraction_quality(item: Any) -> Dict[str, Any]:
-        row = dict(item or {})
+        row = ExtractionAdapter._as_dict(item)
         return {
             "llm_confidence": float(row.get("llm_confidence", row.get("confidence", 0.0)) or 0.0),
             "needs_manual_review": bool(row.get("needs_manual_review", False)),
@@ -176,6 +176,12 @@ class ExtractionAdapter:
             "parse_status": str(row.get("parse_status") or "ok"),
             "schema_validation_status": str(row.get("schema_validation_status") or "ok"),
         }
+
+    @staticmethod
+    def _as_dict(value: Any) -> Dict[str, Any]:
+        if isinstance(value, dict):
+            return dict(value)
+        return {}
 
     @staticmethod
     def _confidence(value: Any) -> float:

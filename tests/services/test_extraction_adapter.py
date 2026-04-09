@@ -20,3 +20,11 @@ def test_extraction_adapter_maps_aliases_and_defaults():
     assert adapted["causal_chains"][0]["steps"][0]["order"] == 1
     assert adapted["key_genes"][0]["gene_role"] == "uncertain"
     assert adapted["extraction_quality"]["llm_confidence"] == 0.8
+
+
+def test_extraction_adapter_tolerates_non_object_quality_payload():
+    adapter = ExtractionAdapter()
+    adapted = adapter.adapt({"extraction_quality": ["oops"]}, "sp_0002")
+
+    assert adapted["extraction_quality"]["llm_confidence"] == 0.0
+    assert adapted["extraction_quality"]["parse_status"] == "ok"
