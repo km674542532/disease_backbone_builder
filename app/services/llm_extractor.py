@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from app.schemas.extraction_result import ExtractionResult
 from app.schemas.source_packet import SourcePacket
+from app.services.extraction_adapter import ExtractionAdapter
 from app.services.llm_client import LLMClient
 from app.utils.json_io import write_jsonl
 
@@ -31,6 +32,7 @@ class LLMExtractor:
         self.llm_client = llm_client
         self.provider = provider.lower()
         self.prompt_template = Path(prompt_path).read_text(encoding="utf-8")
+        self.adapter = ExtractionAdapter()
 
     def extract(self, packet: SourcePacket, disease_ids: Dict[str, Any], seed_genes: list[str]) -> ExtractionResult:
         """Extract one packet as constrained JSON and validate against ExtractionResult schema."""
@@ -72,10 +74,11 @@ class LLMExtractor:
             )
 
         try:
+            adapted_response = self.adapter.adapt(response_obj, packet.source_packet_id)
             payload = {
                 "source_packet_id": packet.source_packet_id,
                 "disease": {"label": packet.disease_label, "mondo_id": disease_ids.get("mondo")},
-                **response_obj,
+                **adapted_response,
             }
             result = ExtractionResult.model_validate(payload)
             result.extraction_quality.parse_status = parse_status
