@@ -1,18 +1,18 @@
 {
-  "backbone_id": "parkinson_disease_backbone_draft_v1",
+  "backbone_id": "pd_backbone_draft_v1_1",
   "validation_passed": false,
   "checks": {
     "hallmark_count_ok": false,
     "module_count_ok": false,
-    "all_core_modules_have_support": true,
+    "all_core_hallmarks_min_support": true,
+    "all_core_modules_min_support": true,
+    "all_core_items_have_source": true,
     "all_chains_have_multiple_steps": true,
-    "all_key_genes_linked_to_module": true,
-    "generic_module_filter_passed": true
+    "generic_module_filter_passed": true,
+    "all_key_genes_linked_to_module": true
   },
-  "warnings": [
-    "Module count out of expected MVP range [1, 12]."
-  ],
+  "warnings": [],
   "review_recommendations": [
-    "Review provisional modules and uncertain genes."
+    "Review provisional items and ensure source grounding coverage."
   ]
 }

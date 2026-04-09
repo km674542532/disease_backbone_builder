@@ -1,9 +1,7 @@
 {
-  "validation_warnings": [
-    "Module count out of expected MVP range [1, 12]."
-  ],
+  "validation_warnings": [],
   "review_recommendations": [
-    "Review provisional modules and uncertain genes."
+    "Review provisional items and ensure source grounding coverage."
   ],
   "prune_log": []
 }

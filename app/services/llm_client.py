@@ -47,13 +47,11 @@ class QwenAPIClient:
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
-        timeout_seconds: int = 60,
+        timeout_seconds: int = 600,
     ) -> None:
-        self.api_key = api_key or os.getenv("QWEN_API_KEY") or os.getenv("DASHSCOPE_API_KEY")
-        self.base_url = base_url or os.getenv(
-            "QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-        )
-        self.model = model or os.getenv("QWEN_MODEL", "qwen-max")
+        self.api_key = os.getenv("QWEN_API_KEY")
+        self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        self.model = "qwen-max"
         self.timeout_seconds = timeout_seconds
 
         if not self.api_key:
@@ -69,6 +67,7 @@ class QwenAPIClient:
                 {"role": "user", "content": prompt},
             ],
         }
+        print(f"QwenAPIClient sending payload: {payload}")
         req = urllib.request.Request(
             self.base_url,
             data=json.dumps(payload).encode("utf-8"),

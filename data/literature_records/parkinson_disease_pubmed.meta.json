@@ -1,0 +1,11 @@
+{
+  "disease": "Parkinson disease",
+  "query_id": "parkinson_disease_review",
+  "query": "(\"Parkinson disease\"[Title/Abstract]) AND review[Publication Type]",
+  "retrieved_at": "2026-04-09T07:37:11.413400+00:00",
+  "record_count": 30,
+  "cache_file": "data/literature_records/parkinson_disease_pubmed.jsonl",
+  "days_back": null,
+  "override_query": null,
+  "max_reviews": 30
+}
