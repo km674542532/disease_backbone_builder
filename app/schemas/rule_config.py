@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
-from pydantic import ConfigDict, Field, ValidationError
+from pydantic import ConfigDict, Field, ValidationError, model_validator
 
 from app.schemas.base import SchemaModel
 
@@ -63,8 +63,8 @@ class RuleConfig(SchemaModel):
     review_selection_rules: ReviewSelectionRules = Field(default_factory=ReviewSelectionRules)
     review_ranking_weights: ReviewRankingWeights = Field(default_factory=ReviewRankingWeights)
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_weights(self) -> "RuleConfig":
         for weight in [
             self.chain_rules.min_chain_confidence,
             self.review_ranking_weights.review_type_weight,
@@ -74,8 +74,8 @@ class RuleConfig(SchemaModel):
             self.review_ranking_weights.disease_specificity_weight,
         ]:
             if not (0.0 <= weight <= 1.0):
-                from pydantic import ValidationError
-                raise ValidationError("rule confidence/weights must be within 0-1")
+                raise ValueError("rule confidence/weights must be within 0-1")
+        return self
 
 
 def load_rule_config(path: str | Path) -> RuleConfig:

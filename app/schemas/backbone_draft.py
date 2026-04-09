@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Literal
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import SchemaModel
 from app.schemas.candidates import (
@@ -42,11 +42,11 @@ class BuildQuality(SchemaModel):
     items_needing_review: int = 0
     provisional_item_count: int = 0
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_overall_confidence(self) -> "BuildQuality":
         if not (0.0 <= self.overall_confidence <= 1.0):
-            from pydantic import ValidationError
-            raise ValidationError("overall_confidence must be within 0-1")
+            raise ValueError("overall_confidence must be within 0-1")
+        return self
 
 
 class DiseaseBackboneDraft(SchemaModel):

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Literal
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import SchemaModel
 from app.schemas.enums import CandidateStatus, GeneRole, ModuleType, RelationPredicate
@@ -30,6 +30,12 @@ class HallmarkCandidate(SchemaModel):
     candidate_confidence: float
     status: CandidateStatus = "candidate"
 
+    @model_validator(mode="after")
+    def _validate_confidence(self) -> "HallmarkCandidate":
+        if not (0.0 <= self.candidate_confidence <= 1.0):
+            raise ValueError("confidence must be within 0-1")
+        return self
+
 
 class ModuleCandidate(SchemaModel):
     model_config = ConfigDict(extra="forbid")
@@ -46,6 +52,12 @@ class ModuleCandidate(SchemaModel):
     candidate_confidence: float
     status: CandidateStatus = "candidate"
 
+    @model_validator(mode="after")
+    def _validate_confidence(self) -> "ModuleCandidate":
+        if not (0.0 <= self.candidate_confidence <= 1.0):
+            raise ValueError("confidence must be within 0-1")
+        return self
+
 
 class ModuleRelation(SchemaModel):
     model_config = ConfigDict(extra="forbid")
@@ -57,6 +69,12 @@ class ModuleRelation(SchemaModel):
     supporting_source_packet_ids: List[str] = Field(default_factory=list)
     supporting_source_document_ids: List[str] = Field(default_factory=list)
     candidate_confidence: float
+
+    @model_validator(mode="after")
+    def _validate_confidence(self) -> "ModuleRelation":
+        if not (0.0 <= self.candidate_confidence <= 1.0):
+            raise ValueError("confidence must be within 0-1")
+        return self
 
 
 class CausalStep(SchemaModel):
@@ -77,11 +95,13 @@ class CausalChainCandidate(SchemaModel):
     candidate_confidence: float
     status: CandidateStatus = "candidate"
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_chain(self) -> "CausalChainCandidate":
         if self.steps and sorted(step.order for step in self.steps) != list(range(1, len(self.steps) + 1)):
-            from pydantic import ValidationError
-            raise ValidationError("causal chain step order must start at 1 and be contiguous")
+            raise ValueError("causal chain step order must start at 1 and be contiguous")
+        if not (0.0 <= self.candidate_confidence <= 1.0):
+            raise ValueError("confidence must be within 0-1")
+        return self
 
 
 class KeyGeneCandidate(SchemaModel):
@@ -96,18 +116,8 @@ class KeyGeneCandidate(SchemaModel):
     candidate_confidence: float
     status: CandidateStatus = "candidate"
 
-
-def _check_confidence(v: float) -> None:
-    if not (0.0 <= v <= 1.0):
-        from pydantic import ValidationError
-        raise ValidationError("confidence must be within 0-1")
-
-
-for _klass in [HallmarkCandidate, ModuleCandidate, ModuleRelation, CausalChainCandidate, KeyGeneCandidate]:
-    _orig_init = _klass.__init__
-
-    def _wrapped_init(self, __orig_init=_orig_init, **data):
-        __orig_init(self, **data)
-        _check_confidence(self.candidate_confidence)
-
-    _klass.__init__ = _wrapped_init
+    @model_validator(mode="after")
+    def _validate_confidence(self) -> "KeyGeneCandidate":
+        if not (0.0 <= self.candidate_confidence <= 1.0):
+            raise ValueError("confidence must be within 0-1")
+        return self

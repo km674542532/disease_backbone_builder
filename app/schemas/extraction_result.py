@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from app.schemas.base import SchemaModel
 from app.schemas.candidates import (
@@ -29,11 +29,11 @@ class ExtractionQuality(SchemaModel):
     parse_status: str = "ok"
     schema_validation_status: str = "ok"
 
-    def __init__(self, **data):
-        super().__init__(**data)
+    @model_validator(mode="after")
+    def _validate_llm_confidence(self) -> "ExtractionQuality":
         if not (0.0 <= self.llm_confidence <= 1.0):
-            from pydantic import ValidationError
-            raise ValidationError("llm_confidence must be within 0-1")
+            raise ValueError("llm_confidence must be within 0-1")
+        return self
 
 
 class ExtractionResult(SchemaModel):
