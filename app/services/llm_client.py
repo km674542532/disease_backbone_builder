@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 from typing import Protocol
 
-from openai import OpenAI
-
+logger = logging.getLogger(__name__)
 
 
 class LLMClient(Protocol):
@@ -94,23 +94,26 @@ class QwenAPIClient:
 
             content = response.choices[0].message.content if response.choices else None
 
-            print(
-                "QwenAPIClient response meta "
-                f"model={response.model} latency={latency_seconds:.3f}s "
-                f"tokens(prompt={prompt_tokens}, completion={completion_tokens}, total={total_tokens})"
+            logger.info(
+                "qwen_response model=%s latency_seconds=%.3f prompt_tokens=%s completion_tokens=%s total_tokens=%s",
+                response.model,
+                latency_seconds,
+                prompt_tokens,
+                completion_tokens,
+                total_tokens,
             )
-            print(f"QwenAPIClient response content (debug): {content}")
+            logger.debug("qwen_response_content=%s", content)
 
             try:
                 parsed = json.loads(content or "")
             except Exception as parse_exc:
-                print(f"QwenAPIClient raw response object: {response}")
+                logger.exception("qwen_parse_error raw_response=%s", response)
                 raise RuntimeError(
                     f"Failed to parse Qwen response as JSON object: {parse_exc}"
                 ) from parse_exc
 
             if not isinstance(parsed, dict):
-                print(f"QwenAPIClient raw response object: {response}")
+                logger.error("qwen_non_object_response raw_response=%s", response)
                 raise RuntimeError("Parsed Qwen response is not a JSON object")
 
             return parsed
