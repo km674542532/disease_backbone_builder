@@ -22,6 +22,7 @@ from app.services.scorer import Scorer
 from app.services.source_collector import SourceCollector
 from app.services.validator import Validator
 from app.services.backbone_v2 import BackboneV2Refiner
+from app.services.v3.source_quality import apply_source_quality, source_tier_distribution
 from app.utils.json_io import read_json, write_json, write_jsonl
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -137,10 +138,26 @@ def _build_artifact_paths(output_root: str, run_id: Optional[str]) -> Dict[str, 
         "backbone_draft_json": root / "outputs" / "disease_backbone_draft.json",
         "backbone_draft_alias_json": root / "outputs" / "pd_backbone_draft_v1_1.json",
         "backbone_draft_v2_json": root / "outputs" / "pd_backbone_draft_v2.json",
+        "backbone_draft_v3_json": root / "outputs" / "pd_backbone_draft_v3.json",
         "validation_report_json": root / "outputs" / "validation_report.json",
         "validation_report_v2_json": root / "outputs" / "validation_report_v2.json",
+        "validation_report_v3_json": root / "outputs" / "validation_report_v3.json",
+        "review_queue_v3_json": root / "outputs" / "review_queue_v3.json",
+        "normalization_qa_report_json": root / "outputs" / "normalization_qa_report.json",
+        "normalization_unresolved_items_json": root / "outputs" / "normalization_unresolved_items.json",
+        "normalization_conflicts_json": root / "outputs" / "normalization_conflicts.json",
+        "review_queue_v4_json": root / "outputs" / "review_queue_v4.json",
+        "backbone_draft_v4_json": root / "outputs" / "pd_backbone_draft_v4.json",
+        "validation_report_v4_json": root / "outputs" / "validation_report_v4.json",
         "backbone_audit_md": Path("docs") / "backbone_audit.md",
         "backbone_review_summary_md": Path("docs") / "backbone_review_summary.md",
+        "backbone_v3_gap_analysis_md": Path("docs") / "backbone_v3_gap_analysis.md",
+        "normalization_rules_v3_md": Path("docs") / "normalization_rules_v3.md",
+        "confidence_scoring_v3_md": Path("docs") / "confidence_scoring_v3.md",
+        "backbone_v3_review_summary_md": Path("docs") / "backbone_v3_review_summary.md",
+        "normalization_external_sources_gap_analysis_md": Path("docs") / "normalization_external_sources_gap_analysis.md",
+        "standard_sources_setup_md": Path("docs") / "standard_sources_setup.md",
+        "normalization_rules_externalized_md": Path("docs") / "normalization_rules_externalized.md",
         "review_bundle_dir": root / "outputs" / "review_bundle",
         "effective_config_json": root / "config" / "effective_builder_config.json",
     }
@@ -226,6 +243,7 @@ def build(
     for source_file in source_files:
         source_docs.extend(collector.collect(source_file))
     packets = packetizer.packetize(disease.label, source_docs)
+    packet_quality = apply_source_quality(source_docs, packets)
 
     extraction_results, failed_packets = extractor.extract_packets(
         packets=packets,
@@ -254,11 +272,13 @@ def build(
     pruned, prune_log = pruner.prune(combined, config)
     write_json(artifacts["prune_log_json"], prune_log)
 
-    refined, review_queue = refiner.normalize_and_filter_backbone_items(pruned)
+    refined, review_queue, v3_metrics = refiner.normalize_and_filter_backbone_items(pruned, packet_quality)
     refined["modules"] = refiner.deduplicate_modules(refined.get("modules", []))
     refined["genes"] = refiner.bind_genes_to_modules(refined.get("modules", []), refined.get("genes", []))
-    refined["chains"] = refiner.build_canonical_chains(refined.get("modules", []), refined.get("genes", []), refined.get("relations", []))
-    refiner.score_modules(refined.get("modules", []), refined.get("relations", []), refined.get("chains", []))
+    refined["chains"] = refiner.build_canonical_chains(
+        refined.get("hallmarks", []), refined.get("modules", []), refined.get("genes", []), refined.get("relations", [])
+    )
+    disease.ids = DiseaseIds(**refiner.disease_ids_v3(disease.label, disease.ids.model_dump()))
 
     review_queue_count = sum(len(v) for v in review_queue.values())
     filtered_item_count = sum(1 for m in refined.get("modules", []) if m.status in {"review", "filtered"})
@@ -273,15 +293,42 @@ def build(
         filtered_item_count=filtered_item_count,
         schema_pass_rate=schema_pass_rate,
     )
+    draft.backbone_id = "pd_backbone_draft_v3"
+    draft.build_quality.source_tier_distribution = source_tier_distribution(packets)
+    draft.build_quality.weighted_support_summary = refiner.weighted_support_summary(packet_quality)
+    draft.build_quality.promoted_core_item_count = v3_metrics["promoted_core_item_count"]
+    draft.build_quality.demoted_low_evidence_item_count = v3_metrics["demoted_low_evidence_item_count"]
+    norm_reports = refiner.normalization_reports()
+    gene_total = max(1, norm_reports["qa_report"]["gene"].get("total_inputs", 0))
+    disease_total = max(1, norm_reports["qa_report"]["disease"].get("total_inputs", 0))
+    draft.build_quality.normalized_gene_rate = round(
+        (gene_total - norm_reports["qa_report"]["gene"].get("unresolved_count", 0)) / gene_total, 4
+    )
+    draft.build_quality.normalized_disease_rate = round(
+        (disease_total - norm_reports["qa_report"]["disease"].get("unresolved_count", 0)) / disease_total, 4
+    )
+    draft.build_quality.unresolved_normalization_item_count = len(norm_reports["unresolved_items"])
+    draft.build_quality.authority_conflict_count = len(norm_reports["conflicts"])
     write_json(artifacts["backbone_draft_json"], draft.model_dump())
     write_json(artifacts["backbone_draft_alias_json"], draft.model_dump())
     write_json(artifacts["backbone_draft_v2_json"], draft.model_dump())
+    write_json(artifacts["backbone_draft_v3_json"], draft.model_dump())
+    write_json(artifacts["backbone_draft_v4_json"], draft.model_dump())
 
     report = validator.validate(draft, config)
     write_json(artifacts["validation_report_json"], report.model_dump())
     write_json(artifacts["validation_report_v2_json"], report.model_dump())
+    write_json(artifacts["validation_report_v3_json"], report.model_dump())
+    write_json(artifacts["validation_report_v4_json"], report.model_dump())
+    review_payload = {k: [x.model_dump() for x in v] for k, v in review_queue.items()}
+    review_payload["unresolved_aliases"] = refiner.unresolved_aliases()
+    write_json(artifacts["review_queue_v3_json"], review_payload)
+    write_json(artifacts["review_queue_v4_json"], review_payload)
+    write_json(artifacts["normalization_qa_report_json"], norm_reports["qa_report"])
+    write_json(artifacts["normalization_unresolved_items_json"], norm_reports["unresolved_items"])
+    write_json(artifacts["normalization_conflicts_json"], norm_reports["conflicts"])
 
-    _write_audit_docs(artifacts, extraction_results, combined, refined, review_queue, prune_log)
+    _write_audit_docs(artifacts, extraction_results, combined, refined, review_queue, prune_log, refiner.unresolved_aliases())
 
     review_dir = artifacts["review_bundle_dir"]
     review_dir.mkdir(parents=True, exist_ok=True)
@@ -335,6 +382,7 @@ def _write_audit_docs(
     refined: Dict[str, list],
     review_queue: Dict[str, list],
     prune_log: List[dict],
+    unresolved_aliases: List[str],
 ) -> None:
     audit_lines = [
         "# Backbone Audit",
@@ -369,6 +417,142 @@ def _write_audit_docs(
     ]
     artifacts["backbone_review_summary_md"].parent.mkdir(parents=True, exist_ok=True)
     artifacts["backbone_review_summary_md"].write_text("\n".join(summary_lines), encoding="utf-8")
+    artifacts["backbone_v3_gap_analysis_md"].write_text(
+        "\n".join(
+            [
+                "# Backbone v3 Gap Analysis",
+                "",
+                "## 当前 coverage 短板",
+                "- v2 中 hallmarks/modules 受 seed 和模板链限制，覆盖不足。",
+                "- key_genes 缺少机制绑定导致核心机制稀疏。",
+                "",
+                "## 当前 normalization 短板",
+                "- 基因 alias 未集中治理，SNCA/DJ-1/PINK-1 等存在碎片化。",
+                "- phenotype 与 mechanism 混层，导致模块语义不稳定。",
+                "",
+                "## 当前 chain generation 短板",
+                "- v2 使用固定模板链，无法随证据拓展。",
+                "- relation edge 未使用 source quality 进行加权。",
+                "",
+                "## 本轮修复策略",
+                "- 引入 source_tier/source_weight 与可解释 confidence breakdown。",
+                "- 新增 normalization 子层（gene/disease/mechanism/phenotype）。",
+                "- 升级为 graph-based canonical chain builder。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["normalization_rules_v3_md"].write_text(
+        "\n".join(
+            [
+                "# Normalization Rules v3",
+                "",
+                "## Gene alias map",
+                "- alpha-synuclein / α-synuclein / Α-SYNUCLEIN -> SNCA",
+                "- DJ-1 -> PARK7",
+                "- PINK-1 -> PINK1",
+                "",
+                "## Mechanism controlled categories",
+                "- alpha_synuclein, mitochondrial, lysosome_autophagy, neuroinflammation, oxidative_stress, synaptic, vesicle_trafficking, proteostasis, metal_homeostasis, gut_brain_axis, dopaminergic_neuron_vulnerability, phenotype, biomarker, intervention",
+                "",
+                "## Unresolved aliases",
+                *[f"- {x}" for x in unresolved_aliases[:50]],
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["confidence_scoring_v3_md"].write_text(
+        "\n".join(
+            [
+                "# Confidence Scoring v3",
+                "",
+                "- confidence = clamp((source_support_score + source_diversity_score + normalization_score + structural_completeness_score + chain_connectivity_score - penalty_score) / 5, 0, 1)",
+                "- hallmark/module/gene/relation/chain 全部写入 confidence_breakdown。",
+                "- core 条目最低要求：非零 confidence 且满足加权证据门槛。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["backbone_v3_review_summary_md"].write_text(
+        "\n".join(
+            [
+                "# Backbone v3 Review Summary",
+                "",
+                "## Hallmarks 保留/合并/降级",
+                f"- 保留数量: {len([h for h in refined.get('hallmarks', []) if h.status in {'candidate', 'core-draft'}])}",
+                f"- 降级数量: {len([h for h in refined.get('hallmarks', []) if h.status == 'provisional'])}",
+                "",
+                "## 核心模块",
+                *[f"- {m.normalized_label}" for m in refined.get("modules", []) if m.status == "core-draft"][:20],
+                "",
+                "## 基因绑定",
+                *[f"- {g.normalized_symbol or g.symbol}: {', '.join(g.linked_modules[:3])}" for g in refined.get("genes", [])[:20]],
+                "",
+                "## canonical chains",
+                *[f"- {c.title}: {' -> '.join(s.event_label for s in c.steps)}" for c in refined.get("chains", [])[:10]],
+                "",
+                "## unresolved / low evidence",
+                *[f"- {x}" for x in unresolved_aliases[:20]],
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["normalization_external_sources_gap_analysis_md"].write_text(
+        "\n".join(
+            [
+                "# Normalization External Sources Gap Analysis",
+                "",
+                "## 当前实现概况",
+                "- 现有流程已接入 HGNC/MONDO/MeSH/Orphanet 离线快照驱动，并保留本地 mechanism/phenotype controlled vocab。",
+                "",
+                "## 缺失的权威外部源支持",
+                "- phenotype 尚未接 HPO；mechanism 尚未接 GO/Reactome；disease 仍缺 OMIM 专用快照。",
+                "",
+                "## 易误归一/漏归一环节",
+                "- 模糊匹配候选在多候选时仅标记冲突，不做上下文判别。",
+                "- 新名词若不在快照中会进入 unresolved，需周期更新快照。",
+                "",
+                "## 本轮修复计划",
+                "- 统一 normalization schema + QA 统计闭环 + unresolved/conflict 落盘输出。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["standard_sources_setup_md"].write_text(
+        "\n".join(
+            [
+                "# Standard Sources Setup",
+                "",
+                "- HGNC: `data/standards/hgnc/hgnc_complete_set.json`",
+                "- MONDO: `data/standards/mondo/mondo_snapshot.json`",
+                "- MeSH: `data/standards/mesh/mesh_snapshot.json`",
+                "- Orphanet: `data/standards/orphanet/orphanet_snapshot.json`",
+                "",
+                "支持 JSON（records 列表）格式，推荐包含 `source_version` 与 `snapshot_date`。",
+                "更新快照后重新运行 build 命令即可自动加载最新本地快照。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    artifacts["normalization_rules_externalized_md"].write_text(
+        "\n".join(
+            [
+                "# Normalization Rules Externalized",
+                "",
+                "## 已外部化到标准源",
+                "- gene: HGNC approved symbol / alias / prev_symbol",
+                "- disease: MONDO + MeSH + Orphanet 聚合",
+                "",
+                "## 仍保留本地规则",
+                "- mechanism_category keyword map",
+                "- phenotype keyword map",
+                "",
+                "## 下一步建议",
+                "- phenotype 接入 HPO；mechanism 接入 GO + Reactome。",
+            ]
+        ),
+        encoding="utf-8",
+    )
 
 
 def main() -> None:

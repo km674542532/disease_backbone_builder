@@ -1,112 +1,19 @@
 {
-  "backbone_id": "pd_backbone_draft_v2",
+  "backbone_id": "pd_backbone_draft_v3",
   "builder_version": "1.1.0",
   "disease": {
     "label": "Parkinson disease",
     "ids": {
-      "mondo": "MONDO:UNKNOWN",
-      "mesh": null,
-      "orphanet": null,
-      "omim": null
+      "mondo": "MONDO:0005180",
+      "mesh": "D010300",
+      "orphanet": "ORPHA:282",
+      "omim": "168600"
     }
   },
   "hallmarks": [],
   "modules": [],
   "module_relations": [],
-  "canonical_chains": [
-    {
-      "candidate_id": "chain_v2_001",
-      "title": "pd_canonical_chain_1",
-      "module_label": "parkinson_mechanism",
-      "steps": [
-        {
-          "order": 1,
-          "event_label": "gene/variant perturbation"
-        },
-        {
-          "order": 2,
-          "event_label": "alpha-synuclein aggregation"
-        },
-        {
-          "order": 3,
-          "event_label": "lysosomal/autophagy dysfunction"
-        },
-        {
-          "order": 4,
-          "event_label": "neuronal vulnerability"
-        },
-        {
-          "order": 5,
-          "event_label": "motor phenotype"
-        }
-      ],
-      "trigger_examples": [],
-      "supporting_source_packet_ids": [],
-      "supporting_source_document_ids": [],
-      "candidate_confidence": 0.8,
-      "status": "candidate"
-    },
-    {
-      "candidate_id": "chain_v2_002",
-      "title": "pd_canonical_chain_2",
-      "module_label": "parkinson_mechanism",
-      "steps": [
-        {
-          "order": 1,
-          "event_label": "gene/variant perturbation"
-        },
-        {
-          "order": 2,
-          "event_label": "mitochondrial dysfunction"
-        },
-        {
-          "order": 3,
-          "event_label": "oxidative stress"
-        },
-        {
-          "order": 4,
-          "event_label": "dopaminergic neuron degeneration"
-        },
-        {
-          "order": 5,
-          "event_label": "motor phenotype"
-        }
-      ],
-      "trigger_examples": [],
-      "supporting_source_packet_ids": [],
-      "supporting_source_document_ids": [],
-      "candidate_confidence": 0.8,
-      "status": "candidate"
-    },
-    {
-      "candidate_id": "chain_v2_003",
-      "title": "pd_canonical_chain_3",
-      "module_label": "parkinson_mechanism",
-      "steps": [
-        {
-          "order": 1,
-          "event_label": "gene/variant perturbation"
-        },
-        {
-          "order": 2,
-          "event_label": "neuroinflammation"
-        },
-        {
-          "order": 3,
-          "event_label": "neuronal dysfunction"
-        },
-        {
-          "order": 4,
-          "event_label": "non-motor phenotype"
-        }
-      ],
-      "trigger_examples": [],
-      "supporting_source_packet_ids": [],
-      "supporting_source_document_ids": [],
-      "candidate_confidence": 0.8,
-      "status": "candidate"
-    }
-  ],
+  "canonical_chains": [],
   "key_genes": [],
   "source_summary": {
     "source_document_count": 0,
@@ -122,13 +29,27 @@
     "selected_specialized_review_count": 0
   },
   "build_quality": {
-    "overall_confidence": 0.8,
+    "overall_confidence": 0.0,
     "items_needing_review": 0,
     "provisional_item_count": 0,
     "schema_pass_rate": 1.0,
     "filtered_item_count": 0,
     "review_queue_count": 0,
-    "grounded_core_module_count": 0
+    "grounded_core_module_count": 0,
+    "source_tier_distribution": {
+      "tier_4_other_review": 1
+    },
+    "weighted_support_summary": {
+      "avg_source_weight": 0.45,
+      "max_source_weight": 0.45,
+      "tier_weight_count": 4.0
+    },
+    "promoted_core_item_count": 0,
+    "demoted_low_evidence_item_count": 0,
+    "normalized_gene_rate": 1.0,
+    "normalized_disease_rate": 1.0,
+    "unresolved_normalization_item_count": 0,
+    "authority_conflict_count": 0
   },
   "status": "draft"
 }

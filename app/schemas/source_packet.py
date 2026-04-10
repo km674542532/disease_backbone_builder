@@ -23,3 +23,5 @@ class SourcePacket(SchemaModel):
     priority_tier: ReviewBucket = "supplementary_review"
     selection_metadata: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    source_tier: str = "tier_5_unknown"
+    source_weight: float = 0.2

@@ -1,12 +1,12 @@
 {
-  "backbone_id": "pd_backbone_draft_v2",
+  "backbone_id": "pd_backbone_draft_v3",
   "validation_passed": false,
   "checks": {
     "hallmark_count_ok": false,
     "module_count_ok": false,
     "all_core_hallmarks_min_support": true,
     "all_core_modules_min_support": true,
-    "all_core_items_have_source": false,
+    "all_core_items_have_source": true,
     "all_chains_have_multiple_steps": true,
     "all_key_genes_linked_to_module": true,
     "no_unknown_hallmark": true,
@@ -14,13 +14,22 @@
     "all_key_genes_have_symbol": true,
     "all_core_modules_have_minimum_content": true,
     "phenotype_not_mixed_into_core": true,
-    "at_least_one_canonical_chain": true,
-    "core_module_confidence_nonzero": true
+    "at_least_one_canonical_chain": false,
+    "core_module_confidence_nonzero": true,
+    "no_zero_confidence_for_core_items": true,
+    "all_core_items_meet_weighted_support_threshold": true,
+    "all_symbols_normalized_or_flagged": true,
+    "no_duplicate_normalized_modules": true,
+    "graph_has_connected_core_component": false,
+    "at_least_three_ranked_canonical_chains": false,
+    "phenotype_layer_separated_from_core_mechanism_layer": true
   },
   "warnings": [
     "hallmark_count_ok",
     "module_count_ok",
-    "all_core_items_have_source"
+    "at_least_one_canonical_chain",
+    "graph_has_connected_core_component",
+    "at_least_three_ranked_canonical_chains"
   ],
   "review_recommendations": [
     "Review queue items and provisional modules before mechanism modeling."

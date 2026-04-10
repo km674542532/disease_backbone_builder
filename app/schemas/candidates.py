@@ -1,7 +1,7 @@
 """Candidate schemas extracted from source packets."""
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import Dict, List, Literal
 
 from pydantic import ConfigDict, Field, model_validator
 
@@ -28,6 +28,9 @@ class HallmarkCandidate(SchemaModel):
     supporting_source_document_ids: List[str] = Field(default_factory=list)
     supporting_spans: List[SupportingSpan] = Field(default_factory=list)
     candidate_confidence: float
+    normalized_category: str = ""
+    source_weighted_support: float = 0.0
+    confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     status: CandidateStatus = "candidate"
 
     @model_validator(mode="after")
@@ -49,9 +52,13 @@ class ModuleCandidate(SchemaModel):
     key_genes: List[str] = Field(default_factory=list)
     process_terms: List[str] = Field(default_factory=list)
     evidence_count: int = 0
+    source_diversity_count: int = 0
+    weighted_support_score: float = 0.0
     supporting_source_packet_ids: List[str] = Field(default_factory=list)
     supporting_source_document_ids: List[str] = Field(default_factory=list)
     candidate_confidence: float
+    normalized_category: str = ""
+    confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     status: CandidateStatus = "candidate"
 
     @model_validator(mode="after")
@@ -73,6 +80,9 @@ class ModuleRelation(SchemaModel):
     supporting_source_packet_ids: List[str] = Field(default_factory=list)
     supporting_source_document_ids: List[str] = Field(default_factory=list)
     candidate_confidence: float
+    mechanism_category: str = ""
+    edge_confidence: float = 0.0
+    confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _validate_confidence(self) -> "ModuleRelation":
@@ -87,6 +97,8 @@ class CausalStep(SchemaModel):
     model_config = ConfigDict(extra="forbid")
     order: int
     event_label: str
+    step_type: str = "module"
+    normalized_category: str = ""
 
 
 class CausalChainCandidate(SchemaModel):
@@ -98,7 +110,10 @@ class CausalChainCandidate(SchemaModel):
     trigger_examples: List[str] = Field(default_factory=list)
     supporting_source_packet_ids: List[str] = Field(default_factory=list)
     supporting_source_document_ids: List[str] = Field(default_factory=list)
+    dominant_mechanism_categories: List[str] = Field(default_factory=list)
+    source_diversity_count: int = 0
     candidate_confidence: float
+    confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     status: CandidateStatus = "candidate"
 
     @model_validator(mode="after")
@@ -116,12 +131,20 @@ class KeyGeneCandidate(SchemaModel):
     model_config = ConfigDict(extra="forbid")
     candidate_id: str
     symbol: str
+    normalized_symbol: str = ""
+    hgnc_id: str = ""
+    approved_name: str = ""
+    match_type: str = ""
+    source_authority: str = ""
+    source_version: str = ""
     gene_role: GeneRole
     linked_modules: List[str] = Field(default_factory=list)
+    supporting_mechanism_categories: List[str] = Field(default_factory=list)
     rationale: str
     supporting_source_packet_ids: List[str] = Field(default_factory=list)
     supporting_source_document_ids: List[str] = Field(default_factory=list)
     candidate_confidence: float
+    confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     status: CandidateStatus = "candidate"
 
     @model_validator(mode="after")

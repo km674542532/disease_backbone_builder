@@ -1,0 +1,71 @@
+{
+  "builder_id": "disease_backbone_builder_v1_1",
+  "version": "1.1.0",
+  "disease": {
+    "label": "Parkinson disease",
+    "mondo_id": "MONDO:UNKNOWN",
+    "mesh_id": null,
+    "orphanet_id": null
+  },
+  "source_policy": {
+    "preferred_source_types": [],
+    "max_documents_per_source_type": 20,
+    "max_packets_per_source": 30,
+    "max_text_chars_per_packet": 12000
+  },
+  "literature_policy": {
+    "enable_pubmed_review_discovery": true,
+    "max_pubmed_candidates": 200,
+    "min_publication_year": 2018,
+    "languages": [
+      "eng"
+    ],
+    "publication_types": [
+      "Review"
+    ],
+    "allow_systematic_review_subset": true,
+    "max_selected_reviews": 10,
+    "max_selected_systematic_reviews": 5,
+    "max_selected_specialized_reviews": 8
+  },
+  "llm_policy": {
+    "provider": "qwen",
+    "mode": "json_constrained_extraction",
+    "temperature": 0.1,
+    "allow_world_knowledge": false,
+    "require_source_grounding": true,
+    "emit_raw_response": true
+  },
+  "aggregation_policy": {
+    "min_support_for_core_module": 2,
+    "min_support_for_core_hallmark": 2,
+    "min_chain_confidence": 0.7,
+    "generic_term_filter_enabled": true
+  },
+  "ranking_policy": {
+    "use_impact_factor": true,
+    "impact_factor_weight": 0.2,
+    "recency_weight": 0.2,
+    "review_type_weight": 0.3,
+    "mechanism_density_weight": 0.2,
+    "disease_specificity_weight": 0.1
+  },
+  "output_policy": {
+    "emit_review_flags": true,
+    "emit_provisional_items": true,
+    "formats": [
+      "json",
+      "jsonl"
+    ]
+  },
+  "source_weights": {
+    "GeneReviews": 1.0,
+    "Orphanet": 0.95,
+    "ClinGenSummary": 0.9,
+    "OMIMSummary": 0.9,
+    "ReviewArticle": 0.8,
+    "SystematicReview": 0.85,
+    "SpecializedReview": 0.75,
+    "Other": 0.5
+  }
+}

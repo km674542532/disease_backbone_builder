@@ -1,7 +1,13 @@
 {
-  "validation_warnings": [],
+  "validation_warnings": [
+    "hallmark_count_ok",
+    "module_count_ok",
+    "at_least_one_canonical_chain",
+    "graph_has_connected_core_component",
+    "at_least_three_ranked_canonical_chains"
+  ],
   "review_recommendations": [
-    "Review provisional items and ensure source grounding coverage."
+    "Review queue items and provisional modules before mechanism modeling."
   ],
   "prune_log": []
 }
