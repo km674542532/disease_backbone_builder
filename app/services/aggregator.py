@@ -78,6 +78,7 @@ class Aggregator:
             exemplar.supporting_source_document_ids = sorted({sid for it in items for sid in it.supporting_source_document_ids})
             exemplar.key_genes = sorted({g for it in items for g in it.key_genes})
             exemplar.process_terms = sorted({p for it in items for p in it.process_terms})
+            exemplar.evidence_count = sum(max(1, len(it.supporting_source_packet_ids)) for it in items)
             combined["modules"].append(exemplar)
             records.append(make_record("module", key, items, i))
 

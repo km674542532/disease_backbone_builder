@@ -8,7 +8,7 @@ _ALLOWED_STATUSES = {"candidate", "provisional"}
 _ALLOWED_MODULE_TYPES = {
     "core_mechanism_module",
     "supporting_module",
-    "phenotype_convergence_module",
+    "phenotype_module",
     "peripheral_module",
 }
 _ALLOWED_PREDICATES = {
@@ -22,10 +22,9 @@ _ALLOWED_PREDICATES = {
     "linked_to",
 }
 _ALLOWED_GENE_ROLES = {
-    "core_driver",
-    "major_associated_gene",
-    "module_specific_gene",
-    "supporting_gene",
+    "driver",
+    "modifier",
+    "biomarker",
     "uncertain",
 }
 
@@ -88,6 +87,8 @@ class ExtractionAdapter:
                     "hallmark_links": self._as_str_list(row.get("hallmark_links", [])),
                     "key_genes": self._as_str_list(row.get("key_genes", row.get("genes", []))),
                     "process_terms": self._as_str_list(row.get("process_terms", [])),
+                    "evidence_count": int(row.get("evidence_count", 0) or 0),
+                    "mechanism_category": str(row.get("mechanism_category") or "proteostasis"),
                     "supporting_source_packet_ids": self._packet_ids(row.get("supporting_source_packet_ids"), source_packet_id),
                     "supporting_source_document_ids": self._as_str_list(row.get("supporting_source_document_ids", [])),
                     "candidate_confidence": self._confidence(row.get("candidate_confidence", row.get("confidence"))),
@@ -216,6 +217,8 @@ class ExtractionAdapter:
     @staticmethod
     def _module_type(value: Any) -> str:
         key = str(value or "supporting_module").strip().lower().replace(" ", "_")
+        if key == "phenotype_convergence_module":
+            key = "phenotype_module"
         return key if key in _ALLOWED_MODULE_TYPES else "supporting_module"
 
     @staticmethod
@@ -226,4 +229,11 @@ class ExtractionAdapter:
     @staticmethod
     def _gene_role(value: Any) -> str:
         key = str(value or "uncertain").strip().lower().replace(" ", "_")
+        remap = {
+            "core_driver": "driver",
+            "major_associated_gene": "modifier",
+            "module_specific_gene": "modifier",
+            "supporting_gene": "modifier",
+        }
+        key = remap.get(key, key)
         return key if key in _ALLOWED_GENE_ROLES else "uncertain"

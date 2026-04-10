@@ -41,11 +41,17 @@ class BuildQuality(SchemaModel):
     overall_confidence: float = 0.0
     items_needing_review: int = 0
     provisional_item_count: int = 0
+    schema_pass_rate: float = 0.0
+    filtered_item_count: int = 0
+    review_queue_count: int = 0
+    grounded_core_module_count: int = 0
 
     @model_validator(mode="after")
     def _validate_overall_confidence(self) -> "BuildQuality":
         if not (0.0 <= self.overall_confidence <= 1.0):
             raise ValueError("overall_confidence must be within 0-1")
+        if not (0.0 <= self.schema_pass_rate <= 1.0):
+            raise ValueError("schema_pass_rate must be within 0-1")
         return self
 
 
