@@ -44,6 +44,7 @@ MechanismCategory = Literal[
     "oxidative_stress",
     "metal_homeostasis",
     "gut_brain_axis",
+    "dopaminergic_neuron_vulnerability",
     "phenotype",
     "intervention",
     "biomarker",

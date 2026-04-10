@@ -1,0 +1,14 @@
+{
+  "source_version": "hgnc_mock_2026_04",
+  "snapshot_date": "2026-04-10",
+  "records": [
+    {"hgnc_id": "HGNC:11138", "symbol": "SNCA", "name": "synuclein alpha", "alias_symbol": ["alpha-synuclein", "α-synuclein", "Α-SYNUCLEIN"], "prev_symbol": []},
+    {"hgnc_id": "HGNC:18618", "symbol": "LRRK2", "name": "leucine rich repeat kinase 2", "alias_symbol": [], "prev_symbol": []},
+    {"hgnc_id": "HGNC:4177", "symbol": "GBA1", "name": "glucosylceramidase beta 1", "alias_symbol": ["GBA"], "prev_symbol": []},
+    {"hgnc_id": "HGNC:8607", "symbol": "PRKN", "name": "parkin RBR E3 ubiquitin protein ligase", "alias_symbol": ["PARK2"], "prev_symbol": []},
+    {"hgnc_id": "HGNC:17797", "symbol": "PINK1", "name": "PTEN induced kinase 1", "alias_symbol": ["PINK-1"], "prev_symbol": []},
+    {"hgnc_id": "HGNC:16369", "symbol": "PARK7", "name": "parkinsonism associated deglycase", "alias_symbol": ["DJ-1"], "prev_symbol": []},
+    {"hgnc_id": "HGNC:12730", "symbol": "VPS35", "name": "VPS35 retromer complex component", "alias_symbol": [], "prev_symbol": []},
+    {"hgnc_id": "HGNC:29585", "symbol": "ATP13A2", "name": "ATPase 13A2", "alias_symbol": [], "prev_symbol": []}
+  ]
+}

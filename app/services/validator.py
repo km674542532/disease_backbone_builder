@@ -33,6 +33,21 @@ class Validator:
             "phenotype_not_mixed_into_core": all(m.module_type != "core_mechanism_module" for m in draft.modules if m.mechanism_category == "phenotype"),
             "at_least_one_canonical_chain": len(draft.canonical_chains) >= 1,
             "core_module_confidence_nonzero": all(m.candidate_confidence > 0 for m in core_modules),
+            "no_zero_confidence_for_core_items": all(
+                x.candidate_confidence > 0 for x in [*core_hallmarks, *core_modules] if getattr(x, "status", "") in {"core-draft", "candidate"}
+            ),
+            "all_core_items_meet_weighted_support_threshold": all(
+                getattr(x, "source_weighted_support", getattr(x, "weighted_support_score", 0.0)) >= 0.45
+                for x in [*core_hallmarks, *core_modules]
+                if getattr(x, "status", "") in {"core-draft", "candidate"}
+            ),
+            "all_symbols_normalized_or_flagged": all(g.normalized_symbol or g.status in {"review", "provisional"} for g in draft.key_genes),
+            "no_duplicate_normalized_modules": len({m.normalized_label for m in draft.modules}) == len(draft.modules),
+            "graph_has_connected_core_component": len(draft.canonical_chains) > 0 and any(len(c.steps) >= 3 for c in draft.canonical_chains),
+            "at_least_three_ranked_canonical_chains": len(draft.canonical_chains) >= 3,
+            "phenotype_layer_separated_from_core_mechanism_layer": all(
+                m.module_type != "core_mechanism_module" for m in draft.modules if m.mechanism_category == "phenotype"
+            ),
         }
 
         warnings = [name for name, passed in checks.items() if not passed]

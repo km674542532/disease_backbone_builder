@@ -45,6 +45,14 @@ class BuildQuality(SchemaModel):
     filtered_item_count: int = 0
     review_queue_count: int = 0
     grounded_core_module_count: int = 0
+    source_tier_distribution: Dict[str, int] = Field(default_factory=dict)
+    weighted_support_summary: Dict[str, float] = Field(default_factory=dict)
+    promoted_core_item_count: int = 0
+    demoted_low_evidence_item_count: int = 0
+    normalized_gene_rate: float = 0.0
+    normalized_disease_rate: float = 0.0
+    unresolved_normalization_item_count: int = 0
+    authority_conflict_count: int = 0
 
     @model_validator(mode="after")
     def _validate_overall_confidence(self) -> "BuildQuality":
