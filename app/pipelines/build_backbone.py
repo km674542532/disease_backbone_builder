@@ -21,6 +21,7 @@ from app.services.pruner import Pruner
 from app.services.scorer import Scorer
 from app.services.source_collector import SourceCollector
 from app.services.validator import Validator
+from app.services.backbone_v2 import BackboneV2Refiner
 from app.utils.json_io import read_json, write_json, write_jsonl
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -135,7 +136,11 @@ def _build_artifact_paths(output_root: str, run_id: Optional[str]) -> Dict[str, 
         "prune_log_json": root / "aggregation" / "prune_log.json",
         "backbone_draft_json": root / "outputs" / "disease_backbone_draft.json",
         "backbone_draft_alias_json": root / "outputs" / "pd_backbone_draft_v1_1.json",
+        "backbone_draft_v2_json": root / "outputs" / "pd_backbone_draft_v2.json",
         "validation_report_json": root / "outputs" / "validation_report.json",
+        "validation_report_v2_json": root / "outputs" / "validation_report_v2.json",
+        "backbone_audit_md": Path("docs") / "backbone_audit.md",
+        "backbone_review_summary_md": Path("docs") / "backbone_review_summary.md",
         "review_bundle_dir": root / "outputs" / "review_bundle",
         "effective_config_json": root / "config" / "effective_builder_config.json",
     }
@@ -215,6 +220,7 @@ def build(
     pruner = Pruner()
     assembler = Assembler()
     validator = Validator()
+    refiner = BackboneV2Refiner()
 
     source_docs = []
     for source_file in source_files:
@@ -248,12 +254,34 @@ def build(
     pruned, prune_log = pruner.prune(combined, config)
     write_json(artifacts["prune_log_json"], prune_log)
 
-    draft = assembler.assemble(disease, config, pruned, packet_source_type)
+    refined, review_queue = refiner.normalize_and_filter_backbone_items(pruned)
+    refined["modules"] = refiner.deduplicate_modules(refined.get("modules", []))
+    refined["genes"] = refiner.bind_genes_to_modules(refined.get("modules", []), refined.get("genes", []))
+    refined["chains"] = refiner.build_canonical_chains(refined.get("modules", []), refined.get("genes", []), refined.get("relations", []))
+    refiner.score_modules(refined.get("modules", []), refined.get("relations", []), refined.get("chains", []))
+
+    review_queue_count = sum(len(v) for v in review_queue.values())
+    filtered_item_count = sum(1 for m in refined.get("modules", []) if m.status in {"review", "filtered"})
+    schema_pass_rate = 1.0 if not extraction_results else round(sum(1 for r in extraction_results if r.extraction_quality.schema_validation_status == "ok") / len(extraction_results), 4)
+
+    draft = assembler.assemble(
+        disease,
+        config,
+        refined,
+        packet_source_type,
+        review_queue_count=review_queue_count,
+        filtered_item_count=filtered_item_count,
+        schema_pass_rate=schema_pass_rate,
+    )
     write_json(artifacts["backbone_draft_json"], draft.model_dump())
     write_json(artifacts["backbone_draft_alias_json"], draft.model_dump())
+    write_json(artifacts["backbone_draft_v2_json"], draft.model_dump())
 
     report = validator.validate(draft, config)
     write_json(artifacts["validation_report_json"], report.model_dump())
+    write_json(artifacts["validation_report_v2_json"], report.model_dump())
+
+    _write_audit_docs(artifacts, extraction_results, combined, refined, review_queue, prune_log)
 
     review_dir = artifacts["review_bundle_dir"]
     review_dir.mkdir(parents=True, exist_ok=True)
@@ -297,6 +325,50 @@ def build(
 
 def _slugify(value: str) -> str:
     return "_".join(value.lower().strip().split())
+
+
+
+def _write_audit_docs(
+    artifacts: Dict[str, Path],
+    extraction_results: List[Any],
+    combined: Dict[str, list],
+    refined: Dict[str, list],
+    review_queue: Dict[str, list],
+    prune_log: List[dict],
+) -> None:
+    audit_lines = [
+        "# Backbone Audit",
+        "",
+        "- 生成入口: `app/pipelines/build_backbone.py::build`。",
+        "- 聚合逻辑: `app/services/aggregator.py::Aggregator.aggregate`。",
+        "- schema/validator: `app/schemas/backbone_draft.py` 与 `app/services/validator.py`。",
+        "- source packet 处理: `app/services/packetizer.py`, `app/services/llm_extractor.py`, `app/services/normalizer.py`。",
+        "",
+        "## 粗糙问题结论",
+        "- 粗糙项主要来自自由抽取候选直接进入聚合，缺少 seed 约束与噪声过滤。",
+        "- hallmark/module 早期缺乏强 schema 限制，导致 unknown 或临床管理类词条混入。",
+        "- gene-module / chain 绑定薄弱，导致机制链可解释性不足。",
+    ]
+    artifacts["backbone_audit_md"].parent.mkdir(parents=True, exist_ok=True)
+    artifacts["backbone_audit_md"].write_text("\n".join(audit_lines), encoding="utf-8")
+
+    noise_items = [m.label for m in refined.get("modules", []) if m.status == "review"]
+    core_items = [m.label for m in refined.get("modules", []) if m.status == "candidate" and m.module_type == "core_mechanism_module"]
+    review_items = [m.label for m in review_queue.get("modules", [])]
+    summary_lines = [
+        "# Backbone Review Summary",
+        "",
+        "## 噪声过滤",
+        *[f"- {x}" for x in noise_items[:20]],
+        "",
+        "## 保留核心模块",
+        *[f"- {x}" for x in core_items[:20]],
+        "",
+        "## 仍需人工 review",
+        *[f"- {x}" for x in review_items[:20]],
+    ]
+    artifacts["backbone_review_summary_md"].parent.mkdir(parents=True, exist_ok=True)
+    artifacts["backbone_review_summary_md"].write_text("\n".join(summary_lines), encoding="utf-8")
 
 
 def main() -> None:

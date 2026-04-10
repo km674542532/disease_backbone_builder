@@ -1,4 +1,4 @@
-"""Controlled vocabulary literal type aliases used across v1.1 schemas."""
+"""Controlled vocabulary literal type aliases used across schemas."""
 from __future__ import annotations
 
 from typing import Literal
@@ -26,12 +26,27 @@ ReviewBucket = Literal[
     "rejected",
 ]
 
-CandidateStatus = Literal["candidate", "provisional", "core-draft", "filtered"]
+CandidateStatus = Literal["candidate", "provisional", "core-draft", "filtered", "review"]
 ModuleType = Literal[
     "core_mechanism_module",
     "supporting_module",
-    "phenotype_convergence_module",
+    "phenotype_module",
     "peripheral_module",
+]
+MechanismCategory = Literal[
+    "proteostasis",
+    "alpha_synuclein",
+    "mitochondrial",
+    "lysosome_autophagy",
+    "neuroinflammation",
+    "synaptic",
+    "vesicle_trafficking",
+    "oxidative_stress",
+    "metal_homeostasis",
+    "gut_brain_axis",
+    "phenotype",
+    "intervention",
+    "biomarker",
 ]
 RelationPredicate = Literal[
     "upstream_of",
@@ -44,10 +59,9 @@ RelationPredicate = Literal[
     "linked_to",
 ]
 GeneRole = Literal[
-    "core_driver",
-    "major_associated_gene",
-    "module_specific_gene",
-    "supporting_gene",
+    "driver",
+    "modifier",
+    "biomarker",
     "uncertain",
 ]
 ModuleRecordType = Literal["hallmark", "module", "chain", "gene", "relation"]
